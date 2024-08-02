@@ -1,0 +1,73 @@
+
+networks:
+  app_net:
+    external: true
+    name: app_net
+  web_net:
+    external: true
+    name: web_net
+
+services:
+    rabbitmq1:
+        image: rabbitmq:3.8-management
+        networks:
+          - web_net
+          - app_net
+        volumes:
+            - ./configfile/:/config/
+        env_file: .env   
+        hostname: rabbit-1
+        container_name: rabbit-1
+        ports:
+            - 8081:15672
+            - 5672:5672
+    rabbitmq2:
+        networks:
+          - web_net
+          - app_net
+        volumes:
+            - ./configfile/:/config/
+        env_file: .env   
+        hostname: rabbit-2
+        container_name: rabbit-2
+        ports:
+            - 8082:15672
+        image: rabbitmq:3.8-management
+    
+    rabbitmq3:
+        networks:
+          - web_net
+          - app_net
+        volumes:
+            - ./configfile/:/config/
+        env_file: .env   
+        hostname: rabbit-3
+        container_name: rabbit-3
+        ports:
+            - 8083:15672
+        image: rabbitmq:3.8-management
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=web_net"
+            - "traefik.http.routers.rabbit.entrypoints=http"
+            - "traefik.http.routers.rabbit.rule=Host(`${RABBIT_SUB1}.${DOMAIN_ADDRESS}`)"
+            - "traefik.http.routers.rabbit.middlewares=https-redirect"
+            - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.rabbit-secure.entrypoints=https"
+            - "traefik.http.routers.rabbit-secure.rule=Host(`${RABBIT_SUB1}.${DOMAIN_ADDRESS}`)"
+            - "traefik.http.routers.rabbit-secure.tls=true"
+            - "traefik.http.routers.rabbit-secure.tls.options=default"
+            - "traefik.http.routers.rabbit-secure.tls.certresolver=mycert"
+            - "traefik.http.routers.rabbit-secure.service=rabbit"
+            - "traefik.http.services.rabbit.loadbalancer.server.port=15672"
+            - "traefik.http.routers.rabbit-api.entrypoints=http"
+            - "traefik.http.routers.rabbit-api.rule=Host(`${RABBIT_SUB2}.${DOMAIN_ADDRESS}`)"
+            - "traefik.http.routers.rabbit-api.middlewares=https-redirect"
+            - "traefik.http.routers.rabbit-api-secure.entrypoints=https"
+            - "traefik.http.routers.rabbit-api-secure.rule=Host(`${RABBIT_SUB2}.${DOMAIN_ADDRESS}`)"
+            - "traefik.http.routers.rabbit-api-secure.tls=true"
+            - "traefik.http.routers.rabbit-api-secure.tls.options=default"
+            - "traefik.http.routers.rabbit-api-secure.tls.certresolver=mycert"
+            - "traefik.http.routers.rabbit-api-secure.service=rabbit-api"
+            - "traefik.http.services.rabbit-api.loadbalancer.server.port=5672"
+ 

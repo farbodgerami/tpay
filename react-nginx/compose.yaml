@@ -1,0 +1,37 @@
+version: "3.8"
+
+networks:
+  app_net:
+    external: true
+    name: app_net
+  web_net:
+    external: true
+    name: web_net
+
+
+services:
+  frontend:
+    build:
+      context: .
+    container_name: frontend
+    hostname: frontend
+    env_file: .env  
+    ports:
+      - "3000:80"
+    networks:
+      - web_net
+      - app_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.react.entrypoints=http"
+      - "traefik.http.routers.react.rule=Host(`${REACT_SUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.react.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.react-secure.entrypoints=https"
+      - "traefik.http.routers.react-secure.rule=Host(`${REACT_SUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.react-secure.tls=true"
+      - "traefik.http.routers.react-secure.tls.options=default"
+      - "traefik.http.routers.react-secure.tls.certresolver=mycert"
+      - "traefik.http.routers.react-secure.service=react"
+      - "traefik.http.services.react.loadbalancer.server.port=80"
